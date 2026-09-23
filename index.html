@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>wireframe studio — gerador de wireframes vetoriais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Bodoni+Moda:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000;
+    --panel:#0a0a0a;
+    --line:#262626;
+    --line-soft:#1a1a1a;
+    --ink:#f5f5f0;
+    --ink-dim:#8a8a85;
+    --ink-faint:#4a4a46;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    height:100%;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Bricolage Grotesque', system-ui, sans-serif;
+    color-scheme:dark;
+  }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .panel{
+    width:340px;
+    flex:0 0 340px;
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    padding:36px 28px 28px;
+    display:flex;
+    flex-direction:column;
+    gap:26px;
+    overflow-y:auto;
+    max-height:100vh;
+  }
+  .brand h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-0.02em;
+    line-height:1;
+  }
+  .brand h1 em{
+    font-family:'Bodoni Moda', 'Times New Roman', serif;
+    font-style:italic;
+    font-weight:500;
+    color:var(--ink-dim);
+    margin-left:7px;
+  }
+  .brand p{
+    margin:10px 0 0;
+    font-size:13px;
+    line-height:1.5;
+    color:var(--ink-dim);
+    max-width:34ch;
+  }
+
+  .field{ display:flex; flex-direction:column; gap:10px; }
+  .field label{
+    font-size:12px;
+    color:var(--ink-dim);
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .field label span{ color:var(--ink); }
+
+  .dropzone{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    height:96px;
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    font-size:13px;
+    color:var(--ink-dim);
+    cursor:pointer;
+    padding:12px;
+    transition:border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--ink);
+    color:var(--ink);
+    background:rgba(255,255,255,0.03);
+  }
+  .dropzone.has-file{ border-style:solid; color:var(--ink); }
+
+  input[type="range"]{
+    -webkit-appearance:none;
+    width:100%;
+    height:2px;
+    background:var(--line);
+    border-radius:2px;
+    accent-color:var(--ink);
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:12px; height:12px;
+    border-radius:50%;
+    background:var(--ink);
+    cursor:pointer;
+    margin-top:-5px;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:12px; height:12px; border:none; border-radius:50%;
+    background:var(--ink); cursor:pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{ height:2px; background:var(--line); }
+  input[type="range"]::-moz-range-track{ height:2px; background:var(--line); }
+
+  .colorRow{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .colorRow label{
+    font-size:13px;
+    color:var(--ink);
+    flex:1;
+  }
+  input[type="color"]{
+    -webkit-appearance:none;
+    width:44px;
+    height:34px;
+    border:1px solid #55554f;
+    border-radius:var(--radius);
+    background:#161616;
+    padding:2px;
+    cursor:pointer;
+    transition:border-color .15s ease;
+  }
+  input[type="color"]:hover{ border-color:#8a8a85; }
+  input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+  input[type="color"]::-webkit-color-swatch{ border:none; border-radius:1px; }
+  input[type="color"]::-moz-color-swatch{ border:none; border-radius:1px; }
+
+  .toggleRow{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13px;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggleRow input[type="checkbox"]{
+    width:15px; height:15px;
+    accent-color:var(--ink);
+    cursor:pointer;
+  }
+
+  fieldset{
+    border:none; margin:0; padding:16px 0 0;
+    display:flex; flex-direction:column; gap:14px;
+    border-top:1px solid var(--line-soft);
+  }
+  .divider{ height:1px; background:var(--line-soft); margin:2px 0; }
+
+  .actions{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  button{
+    font-family:inherit;
+    font-size:13px;
+    padding:12px 14px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  button:hover:not(:disabled){ background:var(--ink); color:#000; border-color:var(--ink); }
+  button:disabled{ color:var(--ink-faint); border-color:var(--line-soft); cursor:not-allowed; }
+  button.primary{ background:var(--ink); color:#000; border-color:var(--ink); }
+  button.primary:hover:not(:disabled){ background:transparent; color:var(--ink); }
+
+  .status{ margin:0; font-size:11.5px; color:var(--ink-faint); letter-spacing:0.01em; }
+
+  .legend{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:11px;
+    color:var(--ink-faint);
+  }
+  .legend div{ display:flex; align-items:center; gap:8px; }
+  .legend .swatchDot{
+    width:9px; height:9px; border-radius:50%; flex:0 0 auto;
+  }
+  .legend .swatchSq{
+    width:8px; height:8px; flex:0 0 auto;
+  }
+
+  /* ---------- stage ---------- */
+  .stage{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:48px;
+    position:relative;
+    background:#000000;
+  }
+  .canvasWrap{
+    position:relative;
+    max-width:100%;
+    max-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #outputCanvas{ display:block; max-width:70vw; max-height:78vh; }
+  #outputCanvas.hidden{ display:none; }
+
+  .emptyState{
+    text-align:center;
+    color:var(--ink-faint);
+    font-size:14px;
+    max-width:320px;
+    line-height:1.6;
+  }
+  .emptyState span{
+    display:block; font-size:11px; letter-spacing:0.04em;
+    color:var(--ink-dim); margin-top:8px;
+  }
+  .starIcon{ width:34px; height:34px; margin:0 auto 18px; opacity:0.5; }
+
+  @media (max-width: 860px){
+    body{ flex-direction:column; }
+    .panel{ width:100%; flex:none; max-height:none; border-right:none; border-bottom:1px solid var(--line); }
+    #outputCanvas{ max-width:90vw; }
+  }
+</style>
+</head>
+<body>
+
+  <aside class="panel">
+    <div class="brand">
+      <h1>wireframe<em>studio</em></h1>
+      <p>envie um .svg e visualize os pontos âncora e handles de bézier reais do vetor.</p>
+    </div>
+
+    <div class="field">
+      <label for="fileInput">arquivo svg</label>
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <span id="dropzoneText">clique ou arraste um .svg</span>
+      </label>
+      <input type="file" id="fileInput" accept=".svg,image/svg+xml" hidden>
+    </div>
+
+    <div class="divider"></div>
+
+    <fieldset style="padding-top:0; border-top:none;">
+      <div class="colorRow">
+        <label for="fillColor">preenchimento do vetor</label>
+        <input type="color" id="fillColor" value="#ffffff">
+      </div>
+      <div class="colorRow">
+        <label for="anchorColor">cor dos pontos âncora</label>
+        <input type="color" id="anchorColor" value="#bdf226">
+      </div>
+      <div class="colorRow">
+        <label for="handleColor">cor dos handles bézier</label>
+        <input type="color" id="handleColor" value="#ff5ec4">
+      </div>
+    </fieldset>
+
+    <div class="divider"></div>
+
+    <fieldset style="padding-top:0; border-top:none;">
+      <label class="toggleRow"><input type="checkbox" id="toggleFill" checked> mostrar preenchimento</label>
+      <label class="toggleRow"><input type="checkbox" id="toggleAnchors" checked> mostrar pontos âncora</label>
+      <label class="toggleRow"><input type="checkbox" id="toggleHandles" checked> mostrar handles bézier</label>
+    </fieldset>
+
+    <div class="field">
+      <label for="markerScale">tamanho dos marcadores <span id="markerScaleVal">1.0×</span></label>
+      <input type="range" id="markerScale" min="0.2" max="4" value="1" step="0.1">
+    </div>
+
+    <div class="field">
+      <label for="lineWidthScale">espessura das linhas <span id="lineWidthScaleVal">1.0×</span></label>
+      <input type="range" id="lineWidthScale" min="0.2" max="4" value="1" step="0.1">
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="legend">
+      <div><span class="swatchSq" id="legendAnchorSwatch" style="background:#bdf226;"></span> quadrado = ponto âncora (vértice real)</div>
+      <div><span class="swatchDot" id="legendHandleSwatch" style="background:#ff5ec4;"></span> círculo = ponto de controle bézier</div>
+    </div>
+
+    <div class="actions">
+      <button id="downloadPng" class="primary" disabled>baixar .png</button>
+      <button id="downloadSvg" disabled>baixar .svg</button>
+      <button id="copyImage" disabled>copiar para área de transferência</button>
+    </div>
+
+    <p class="status" id="status">aguardando upload...</p>
+  </aside>
+
+  <main class="stage">
+    <div class="canvasWrap">
+      <canvas id="outputCanvas" class="hidden"></canvas>
+      <div class="emptyState" id="emptyState">
+        <svg class="starIcon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 1 L14.5 9.5 L23 12 L14.5 14.5 L12 23 L9.5 14.5 L1 12 L9.5 9.5 Z" fill="#f5f5f0"/>
+        </svg>
+        <p>envie um arquivo .svg para começar</p>
+        <span>os pontos são extraídos diretamente dos comandos do path</span>
+      </div>
+    </div>
+  </main>
+
+<script>
+(function(){
+  "use strict";
+
+  // =====================================================================
+  // SVG PATH PARSER
+  // Converts a `d` attribute string into canonical, absolute-coordinate
+  // subpaths. Relative commands (m,l,h,v,c,s,q,t,a) are resolved against
+  // the running current point; S/T reflect the previous control point per
+  // spec. Arcs (A) are kept as their own segment type — they carry real
+  // ellipse parameters from the file, not synthetic control points, so no
+  // bézier handles are fabricated for them; only their true start/end
+  // remain anchor points. Nothing here invents geometry that isn't in the
+  // original command stream.
+  // =====================================================================
+
+  var NUM_RE = /[-+]?(\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?/g;
+  var ARC_ARG_RE = /([+-]?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?)[\s,]*([+-]?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?)[\s,]*([+-]?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?)[\s,]*([01])[\s,]*([01])[\s,]*([+-]?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?)[\s,]*([+-]?(?:\d+\.\d+|\.\d+|\d+)(?:[eE][-+]?\d+)?)/g;
+
+  var ARG_COUNTS = { M:2, L:2, H:1, V:1, C:6, S:4, Q:4, T:2, A:7, Z:0 };
+
+  function extractNumbers(str){
+    var out = [];
+    var m;
+    NUM_RE.lastIndex = 0;
+    while ((m = NUM_RE.exec(str)) !== null){ out.push(parseFloat(m[0])); }
+    return out;
+  }
+
+  function extractArcArgs(str){
+    var out = [];
+    var m;
+    ARC_ARG_RE.lastIndex = 0;
+    while ((m = ARC_ARG_RE.exec(str)) !== null){
+      out.push([
+        parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3]),
+        parseFloat(m[4]), parseFloat(m[5]),
+        parseFloat(m[6]), parseFloat(m[7])
+      ]);
+    }
+    return out;
+  }
+
+  // splits "d" into { letter, argsStr } command tokens
+  function tokenizeCommands(d){
+    var tokens = [];
+    var re = /([MmZzLlHhVvCcSsQqTtAa])([^MmZzLlHhVvCcSsQqTtAa]*)/g;
+    var m;
+    while ((m = re.exec(d)) !== null){
+      tokens.push({ letter: m[1], argsStr: m[2] });
+    }
+    return tokens;
+  }
+
+  // parses a full "d" attribute into an array of subpaths; each subpath is
+  // an array of canonical segments in ABSOLUTE coordinates:
+  //   {cmd:'M', to}
+  //   {cmd:'L', to}
+  //   {cmd:'C', c1, c2, to}
+  //   {cmd:'Q', c1, to}
+  //   {cmd:'A', rx, ry, rot, laf, swf, from, to}
+  //   {cmd:'Z'}
+  function parsePathD(d){
+    var tokens = tokenizeCommands(d);
+    var subpaths = [];
+    var current = null;
+    var cx = 0, cy = 0, sx = 0, sy = 0;
+    var prevType = null, prevCP = null;
+
+    tokens.forEach(function(tok){
+      var letter = tok.letter;
+      var type = letter.toUpperCase();
+      var abs = (letter === type);
+
+      if (type === 'A'){
+        var sets = extractArcArgs(tok.argsStr);
+        sets.forEach(function(a){
+          var rx = a[0], ry = a[1], rot = a[2], laf = a[3], swf = a[4];
+          var x = abs ? a[5] : cx + a[5];
+          var y = abs ? a[6] : cy + a[6];
+          if (!current){ current = []; subpaths.push(current); sx = cx; sy = cy; }
+          current.push({ cmd:'A', rx:rx, ry:ry, rot:rot, laf:laf, swf:swf, from:{x:cx,y:cy}, to:{x:x,y:y} });
+          cx = x; cy = y; prevType = 'A'; prevCP = null;
+        });
+        return;
+      }
+
+      var nums = extractNumbers(tok.argsStr);
+      var argCount = ARG_COUNTS[type];
+      var chunks = [];
+      if (argCount === 0){
+        chunks.push([]);
+      } else {
+        for (var i = 0; i + argCount <= nums.length; i += argCount){
+          chunks.push(nums.slice(i, i + argCount));
+        }
+        if (chunks.length === 0) chunks.push(nums);
+      }
+
+      chunks.forEach(function(n, idx){
+        // an implicit repeat of M becomes L, per the SVG spec
+        var effType = (type === 'M' && idx > 0) ? 'L' : type;
+
+        switch (effType){
+          case 'M': {
+            var x = abs ? n[0] : cx + n[0];
+            var y = abs ? n[1] : cy + n[1];
+            current = [];
+            subpaths.push(current);
+            current.push({ cmd:'M', to:{x:x,y:y} });
+            cx = x; cy = y; sx = x; sy = y;
+            prevType = 'M'; prevCP = null;
+            break;
+          }
+          case 'L': {
+            var x2 = abs ? n[0] : cx + n[0];
+            var y2 = abs ? n[1] : cy + n[1];
+            current.push({ cmd:'L', to:{x:x2,y:y2} });
+            cx = x2; cy = y2; prevType = 'L'; prevCP = null;
+            break;
+          }
+          case 'H': {
+            var xh = abs ? n[0] : cx + n[0];
+            current.push({ cmd:'L', to:{x:xh, y:cy} });
+            cx = xh; prevType = 'L'; prevCP = null;
+            break;
+          }
+          case 'V': {
+            var yv = abs ? n[0] : cy + n[0];
+            current.push({ cmd:'L', to:{x:cx, y:yv} });
+            cy = yv; prevType = 'L'; prevCP = null;
+            break;
+          }
+          case 'C': {
+            var c1 = { x: abs ? n[0] : cx + n[0], y: abs ? n[1] : cy + n[1] };
+            var c2 = { x: abs ? n[2] : cx + n[2], y: abs ? n[3] : cy + n[3] };
+            var to = { x: abs ? n[4] : cx + n[4], y: abs ? n[5] : cy + n[5] };
+            current.push({ cmd:'C', c1:c1, c2:c2, to:to });
+            cx = to.x; cy = to.y; prevType = 'C'; prevCP = c2;
+            break;
+          }
+          case 'S': {
+            var s1;
+            if (prevType === 'C' || prevType === 'S'){ s1 = { x: 2*cx - prevCP.x, y: 2*cy - prevCP.y }; }
+            else { s1 = { x:cx, y:cy }; }
+            var s2 = { x: abs ? n[0] : cx + n[0], y: abs ? n[1] : cy + n[1] };
+            var sto = { x: abs ? n[2] : cx + n[2], y: abs ? n[3] : cy + n[3] };
+            current.push({ cmd:'C', c1:s1, c2:s2, to:sto });
+            cx = sto.x; cy = sto.y; prevType = 'C'; prevCP = s2;
+            break;
+          }
+          case 'Q': {
+            var q1 = { x: abs ? n[0] : cx + n[0], y: abs ? n[1] : cy + n[1] };
+            var qto = { x: abs ? n[2] : cx + n[2], y: abs ? n[3] : cy + n[3] };
+            current.push({ cmd:'Q', c1:q1, to:qto });
+            cx = qto.x; cy = qto.y; prevType = 'Q'; prevCP = q1;
+            break;
+          }
+          case 'T': {
+            var t1;
+            if (prevType === 'Q' || prevType === 'T'){ t1 = { x: 2*cx - prevCP.x, y: 2*cy - prevCP.y }; }
+            else { t1 = { x:cx, y:cy }; }
+            var tto = { x: abs ? n[0] : cx + n[0], y: abs ? n[1] : cy + n[1] };
+            current.push({ cmd:'Q', c1:t1, to:tto });
+            cx = tto.x; cy = tto.y; prevType = 'Q'; prevCP = t1;
+            break;
+          }
+          case 'Z': {
+            current.push({ cmd:'Z' });
+            cx = sx; cy = sy; prevType = 'Z'; prevCP = null;
+            break;
+          }
+        }
+      });
+    });
+
+    return subpaths;
+  }
+
+  // walks canonical subpaths and returns { anchors:[{x,y}], handles:[{x1,y1,x2,y2,cx,cy}] }
+  // a handle whose control point sits exactly on top of the anchor it's
+  // attached to (the SVG spec's own fallback for a reflected S/T with no
+  // preceding curve, among other cases) carries no real curvature — it
+  // would only render as a stray dot under the anchor square, so it's
+  // left out rather than plotted as a fake handle
+  var DEGENERATE_EPS = 1e-3;
+  function isDegenerateHandle(x1, y1, cx, cy){
+    return Math.abs(x1 - cx) < DEGENERATE_EPS && Math.abs(y1 - cy) < DEGENERATE_EPS;
+  }
+
+  function extractAnchorsAndHandles(subpaths){
+    var anchors = [];
+    var handles = [];
+
+    function pushHandle(x1, y1, x2, y2, cx, cy){
+      if (isDegenerateHandle(x1, y1, cx, cy)) return;
+      handles.push({ x1:x1, y1:y1, x2:x2, y2:y2, cx:cx, cy:cy });
+    }
+
+    subpaths.forEach(function(seg){
+      var prevPoint = null;
+      seg.forEach(function(s){
+        if (s.cmd === 'M'){
+          anchors.push(s.to);
+          prevPoint = s.to;
+        } else if (s.cmd === 'L' || s.cmd === 'A'){
+          anchors.push(s.to);
+          prevPoint = s.to;
+        } else if (s.cmd === 'C'){
+          anchors.push(s.to);
+          if (prevPoint){ pushHandle(prevPoint.x, prevPoint.y, s.c1.x, s.c1.y, s.c1.x, s.c1.y); }
+          pushHandle(s.to.x, s.to.y, s.c2.x, s.c2.y, s.c2.x, s.c2.y);
+          prevPoint = s.to;
+        } else if (s.cmd === 'Q'){
+          anchors.push(s.to);
+          if (prevPoint){ pushHandle(prevPoint.x, prevPoint.y, s.c1.x, s.c1.y, s.c1.x, s.c1.y); }
+          pushHandle(s.to.x, s.to.y, s.c1.x, s.c1.y, s.c1.x, s.c1.y);
+          prevPoint = s.to;
+        }
+        // 'Z' introduces no new anchor — it closes back to the subpath start
+      });
+    });
+
+    return { anchors: anchors, handles: handles };
+  }
+
+  // bounding box of everything the overlay could draw (declared viewBox,
+  // every anchor, every handle control point) — used to size the canvas
+  // with enough headroom that markers and handle lines near the edge
+  // never get clipped
+  function computeContentBounds(viewBox, anchors, handles){
+    var minX = viewBox.x, maxX = viewBox.x + viewBox.w;
+    var minY = viewBox.y, maxY = viewBox.y + viewBox.h;
+    anchors.forEach(function(p){
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    });
+    handles.forEach(function(h){
+      minX = Math.min(minX, h.cx); maxX = Math.max(maxX, h.cx);
+      minY = Math.min(minY, h.cy); maxY = Math.max(maxY, h.cy);
+    });
+    return { minX:minX, maxX:maxX, minY:minY, maxY:maxY };
+  }
+
+  // =====================================================================
+  // app
+  // =====================================================================
+
+  var EXPORT_SCALE = 2;
+
+  var fileInput   = document.getElementById('fileInput');
+  var dropzone    = document.getElementById('dropzone');
+  var dropzoneText= document.getElementById('dropzoneText');
+  var fillColor   = document.getElementById('fillColor');
+  var anchorColor = document.getElementById('anchorColor');
+  var handleColor = document.getElementById('handleColor');
+  var toggleFill  = document.getElementById('toggleFill');
+  var toggleAnchors = document.getElementById('toggleAnchors');
+  var toggleHandles = document.getElementById('toggleHandles');
+  var markerScale = document.getElementById('markerScale');
+  var markerScaleVal = document.getElementById('markerScaleVal');
+  var lineWidthScale = document.getElementById('lineWidthScale');
+  var lineWidthScaleVal = document.getElementById('lineWidthScaleVal');
+  var legendAnchorSwatch = document.getElementById('legendAnchorSwatch');
+  var legendHandleSwatch = document.getElementById('legendHandleSwatch');
+  var downloadPngBtn = document.getElementById('downloadPng');
+  var downloadSvgBtn = document.getElementById('downloadSvg');
+  var copyImageBtn   = document.getElementById('copyImage');
+  var statusEl    = document.getElementById('status');
+  var canvas      = document.getElementById('outputCanvas');
+  var ctx         = canvas.getContext('2d');
+  var emptyState  = document.getElementById('emptyState');
+
+  var hasFile = false;
+  var pathDs = [];          // original "d" strings, for exact fill rendering via Path2D
+  var allAnchors = [];
+  var allHandles = [];
+  var vb = { x:0, y:0, w:512, h:512 };
+  var contentBounds = { minX:0, maxX:512, minY:0, maxY:512 };
+  var baseMarkerSize = 6;
+
+  function setStatus(msg){ statusEl.textContent = msg; }
+
+  // ---------- upload ----------
+  dropzone.addEventListener('click', function(){ fileInput.click(); });
+  dropzone.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+  ['dragenter','dragover'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', function(e){
+    var files = e.dataTransfer.files;
+    if (files && files.length) handleFile(files[0]);
+  });
+  fileInput.addEventListener('change', function(e){
+    if (e.target.files && e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file){
+    var isSvg = /image\/svg/.test(file.type) || /\.svg$/i.test(file.name);
+    if (!isSvg){ setStatus('formato não suportado — envie um .svg'); return; }
+    setStatus('lendo arquivo...');
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        parseSvgText(e.target.result);
+        dropzoneText.textContent = file.name;
+        dropzone.classList.add('has-file');
+      }catch(err){
+        setStatus('erro ao interpretar o svg: ' + err.message);
+      }
+    };
+    reader.onerror = function(){ setStatus('não foi possível ler esse arquivo'); };
+    reader.readAsText(file);
+  }
+
+  function parseSvgText(text){
+    var doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    var errNode = doc.querySelector('parsererror');
+    if (errNode){ throw new Error('svg inválido'); }
+
+    var root = doc.documentElement;
+    vb = readViewBox(root);
+
+    var pathEls = Array.prototype.slice.call(doc.querySelectorAll('path'));
+    pathEls = pathEls.filter(function(p){ return p.getAttribute('d'); });
+    if (pathEls.length === 0){ throw new Error('nenhum <path> encontrado'); }
+
+    pathDs = pathEls.map(function(p){ return p.getAttribute('d'); });
+
+    allAnchors = [];
+    allHandles = [];
+    pathDs.forEach(function(d){
+      var subpaths = parsePathD(d);
+      var extracted = extractAnchorsAndHandles(subpaths);
+      allAnchors = allAnchors.concat(extracted.anchors);
+      allHandles = allHandles.concat(extracted.handles);
+    });
+
+    baseMarkerSize = Math.max(vb.w, vb.h) * 0.018;
+    contentBounds = computeContentBounds(vb, allAnchors, allHandles);
+
+    hasFile = true;
+    downloadPngBtn.disabled = false;
+    downloadSvgBtn.disabled = false;
+    copyImageBtn.disabled = false;
+    canvas.classList.remove('hidden');
+    emptyState.style.display = 'none';
+
+    render();
+    setStatus(allAnchors.length + ' pontos âncora · ' + allHandles.length + ' handles · ' + vb.w.toFixed(0) + '×' + vb.h.toFixed(0));
+  }
+
+  function readViewBox(svgRoot){
+    var vbAttr = svgRoot.getAttribute('viewBox');
+    if (vbAttr){
+      var parts = vbAttr.trim().split(/[\s,]+/).map(parseFloat);
+      if (parts.length === 4 && parts.every(function(n){ return !isNaN(n); })){
+        return { x:parts[0], y:parts[1], w:parts[2], h:parts[3] };
+      }
+    }
+    var w = parseFloat(svgRoot.getAttribute('width'));
+    var h = parseFloat(svgRoot.getAttribute('height'));
+    if (!isNaN(w) && !isNaN(h) && w > 0 && h > 0){ return { x:0, y:0, w:w, h:h }; }
+    return { x:0, y:0, w:512, h:512 };
+  }
+
+  // ---------- rendering ----------
+  function computeLayout(){
+    var scale = parseFloat(markerScale.value);
+    var lwScale = parseFloat(lineWidthScale.value);
+    var anchorSize = baseMarkerSize * scale;
+    var handleR = baseMarkerSize * 0.55 * scale;
+    var lineW = Math.max(0.4, baseMarkerSize * 0.16 * lwScale);
+
+    // padding covers whichever marker extends furthest from its own
+    // point, plus a small buffer, so nothing sits flush against the edge
+    var padding = Math.max(anchorSize / 2, handleR) + Math.max(2, baseMarkerSize * 0.25);
+
+    var originX = contentBounds.minX - padding;
+    var originY = contentBounds.minY - padding;
+    var totalW = (contentBounds.maxX - contentBounds.minX) + padding * 2;
+    var totalH = (contentBounds.maxY - contentBounds.minY) + padding * 2;
+
+    return {
+      anchorSize: anchorSize, handleR: handleR, lineW: lineW,
+      originX: originX, originY: originY, totalW: totalW, totalH: totalH
+    };
+  }
+
+  function render(){
+    if (!hasFile) return;
+
+    var L = computeLayout();
+    var anchorSize = L.anchorSize, handleR = L.handleR, lineW = L.lineW;
+
+    canvas.width = L.totalW * EXPORT_SCALE;
+    canvas.height = L.totalH * EXPORT_SCALE;
+    canvas.style.width = L.totalW + 'px';
+    canvas.style.height = L.totalH + 'px';
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+    ctx.translate(-L.originX, -L.originY);
+
+    if (toggleFill.checked){
+      ctx.fillStyle = fillColor.value;
+      pathDs.forEach(function(d){
+        try{ ctx.fill(new Path2D(d)); }catch(err){ /* skip malformed path */ }
+      });
+    } else {
+      ctx.strokeStyle = fillColor.value;
+      ctx.lineWidth = lineW;
+      pathDs.forEach(function(d){
+        try{ ctx.stroke(new Path2D(d)); }catch(err){ /* skip malformed path */ }
+      });
+    }
+
+    if (toggleHandles.checked){
+      ctx.strokeStyle = handleColor.value;
+      ctx.fillStyle = handleColor.value;
+      ctx.lineWidth = lineW;
+      allHandles.forEach(function(h){
+        ctx.beginPath();
+        ctx.moveTo(h.x1, h.y1);
+        ctx.lineTo(h.x2, h.y2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(h.cx, h.cy, handleR, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    if (toggleAnchors.checked){
+      ctx.fillStyle = anchorColor.value;
+      allAnchors.forEach(function(a){
+        ctx.fillRect(a.x - anchorSize/2, a.y - anchorSize/2, anchorSize, anchorSize);
+      });
+    }
+  }
+
+  function rerender(){ if (hasFile) render(); }
+
+  // ---------- svg export (embeds the overlay) ----------
+  function buildExportSVG(){
+    var L = computeLayout();
+    var anchorSize = L.anchorSize, handleR = L.handleR, lineW = L.lineW;
+
+    var parts = [];
+    parts.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + round2(L.originX) + ' ' + round2(L.originY) + ' ' + round2(L.totalW) + ' ' + round2(L.totalH) + '" width="' + round2(L.totalW) + '" height="' + round2(L.totalH) + '">');
+
+    if (toggleFill.checked){
+      parts.push('<g fill="' + fillColor.value + '">');
+      pathDs.forEach(function(d){ parts.push('<path d="' + d + '"/>'); });
+      parts.push('</g>');
+    } else {
+      parts.push('<g fill="none" stroke="' + fillColor.value + '" stroke-width="' + round2(lineW) + '">');
+      pathDs.forEach(function(d){ parts.push('<path d="' + d + '"/>'); });
+      parts.push('</g>');
+    }
+
+    if (toggleHandles.checked){
+      parts.push('<g stroke="' + handleColor.value + '" fill="' + handleColor.value + '" stroke-width="' + round2(lineW) + '">');
+      allHandles.forEach(function(h){
+        parts.push('<line x1="' + round2(h.x1) + '" y1="' + round2(h.y1) + '" x2="' + round2(h.x2) + '" y2="' + round2(h.y2) + '"/>');
+        parts.push('<circle cx="' + round2(h.cx) + '" cy="' + round2(h.cy) + '" r="' + round2(handleR) + '"/>');
+      });
+      parts.push('</g>');
+    }
+
+    if (toggleAnchors.checked){
+      parts.push('<g fill="' + anchorColor.value + '">');
+      allAnchors.forEach(function(a){
+        parts.push('<rect x="' + round2(a.x - anchorSize/2) + '" y="' + round2(a.y - anchorSize/2) + '" width="' + round2(anchorSize) + '" height="' + round2(anchorSize) + '"/>');
+      });
+      parts.push('</g>');
+    }
+
+    parts.push('</svg>');
+    return parts.join('');
+  }
+
+  function round2(n){ return Math.round(n * 100) / 100; }
+
+  // ---------- downloads ----------
+  function triggerDownload(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  downloadPngBtn.addEventListener('click', function(){
+    if (!hasFile) return;
+    canvas.toBlob(function(blob){ if (blob) triggerDownload(blob, 'wireframe.png'); }, 'image/png');
+  });
+
+  downloadSvgBtn.addEventListener('click', function(){
+    if (!hasFile) return;
+    var svgStr = buildExportSVG();
+    triggerDownload(new Blob([svgStr], { type:'image/svg+xml' }), 'wireframe.svg');
+  });
+
+  copyImageBtn.addEventListener('click', function(){
+    if (!hasFile) return;
+    canvas.toBlob(function(blob){
+      if (!blob) return;
+      if (!navigator.clipboard || !window.ClipboardItem){
+        setStatus('cópia não suportada neste navegador');
+        return;
+      }
+      navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ])
+        .then(function(){ setStatus('imagem copiada para a área de transferência'); })
+        .catch(function(){ setStatus('não foi possível copiar (permissão do navegador?)'); });
+    }, 'image/png');
+  });
+
+  // ---------- control bindings ----------
+  fillColor.addEventListener('input', function(){
+    legendAnchorSwatch.style.background = anchorColor.value;
+    rerender();
+  });
+  anchorColor.addEventListener('input', function(){
+    legendAnchorSwatch.style.background = anchorColor.value;
+    rerender();
+  });
+  handleColor.addEventListener('input', function(){
+    legendHandleSwatch.style.background = handleColor.value;
+    rerender();
+  });
+  toggleFill.addEventListener('change', rerender);
+  toggleAnchors.addEventListener('change', rerender);
+  toggleHandles.addEventListener('change', rerender);
+  markerScale.addEventListener('input', function(){
+    markerScaleVal.textContent = parseFloat(markerScale.value).toFixed(1) + '×';
+    rerender();
+  });
+  lineWidthScale.addEventListener('input', function(){
+    lineWidthScaleVal.textContent = parseFloat(lineWidthScale.value).toFixed(1) + '×';
+    rerender();
+  });
+
+})();
+</script>
+</body>
+</html>
