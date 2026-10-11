@@ -210,16 +210,16 @@
     padding:48px;
     position:relative;
     background:#000000;
+    overflow:auto;
   }
   .canvasWrap{
     position:relative;
-    max-width:100%;
-    max-height:100%;
     display:flex;
     align-items:center;
     justify-content:center;
+    margin:auto;
   }
-  #outputCanvas{ display:block; max-width:70vw; max-height:78vh; }
+  #outputCanvas{ display:block; }
   #outputCanvas.hidden{ display:none; }
 
   .emptyState{
@@ -235,10 +235,43 @@
   }
   .starIcon{ width:34px; height:34px; margin:0 auto 18px; opacity:0.5; }
 
+  .zoomBar{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:rgba(10,10,10,0.9);
+    border:1px solid var(--line);
+    border-radius:24px;
+    padding:8px 18px;
+    backdrop-filter:blur(6px);
+    z-index:10;
+  }
+  .zoomBar.hidden{ display:none; }
+  .zoomBar button{
+    width:24px; height:24px;
+    padding:0;
+    border-radius:50%;
+    font-size:15px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .zoomBar input[type="range"]{ width:140px; }
+  .zoomBar span{
+    font-size:12px;
+    color:var(--ink-dim);
+    min-width:42px;
+    text-align:center;
+  }
+
   @media (max-width: 860px){
     body{ flex-direction:column; }
     .panel{ width:100%; flex:none; max-height:none; border-right:none; border-bottom:1px solid var(--line); }
-    #outputCanvas{ max-width:90vw; }
   }
 </style>
 </head>
@@ -321,6 +354,13 @@
       </div>
     </div>
   </main>
+
+  <div class="zoomBar hidden" id="zoomBar">
+    <button type="button" id="zoomOut" aria-label="diminuir zoom">−</button>
+    <input type="range" id="zoomSlider" min="25" max="400" value="100" step="5">
+    <button type="button" id="zoomIn" aria-label="aumentar zoom">+</button>
+    <span id="zoomVal">100%</span>
+  </div>
 
 <script>
 (function(){
@@ -570,7 +610,8 @@
   // app
   // =====================================================================
 
-  var EXPORT_SCALE = 2;
+  var SUPERSAMPLE = 2;       // internal pixel density, independent of zoom — keeps edges crisp
+  var FIT_TARGET_PX = 560;   // baseline on-screen size (css px) a file is scaled to at 100% zoom
 
   var fileInput   = document.getElementById('fileInput');
   var dropzone    = document.getElementById('dropzone');
@@ -594,6 +635,11 @@
   var canvas      = document.getElementById('outputCanvas');
   var ctx         = canvas.getContext('2d');
   var emptyState  = document.getElementById('emptyState');
+  var zoomBar     = document.getElementById('zoomBar');
+  var zoomSlider  = document.getElementById('zoomSlider');
+  var zoomVal     = document.getElementById('zoomVal');
+  var zoomOutBtn  = document.getElementById('zoomOut');
+  var zoomInBtn   = document.getElementById('zoomIn');
 
   var hasFile = false;
   var pathDs = [];          // original "d" strings, for exact fill rendering via Path2D
@@ -602,6 +648,7 @@
   var vb = { x:0, y:0, w:512, h:512 };
   var contentBounds = { minX:0, maxX:512, minY:0, maxY:512 };
   var baseMarkerSize = 6;
+  var baseFitRatio = 1;     // css px per vector unit at 100% zoom
 
   function setStatus(msg){ statusEl.textContent = msg; }
 
@@ -666,12 +713,19 @@
     baseMarkerSize = Math.max(vb.w, vb.h) * 0.018;
     contentBounds = computeContentBounds(vb, allAnchors, allHandles);
 
+    var contentW = contentBounds.maxX - contentBounds.minX;
+    var contentH = contentBounds.maxY - contentBounds.minY;
+    baseFitRatio = FIT_TARGET_PX / Math.max(contentW, contentH, 1);
+
     hasFile = true;
     downloadPngBtn.disabled = false;
     downloadSvgBtn.disabled = false;
     copyImageBtn.disabled = false;
     canvas.classList.remove('hidden');
     emptyState.style.display = 'none';
+    zoomBar.classList.remove('hidden');
+    zoomSlider.value = 100;
+    zoomVal.textContent = '100%';
 
     render();
     setStatus(allAnchors.length + ' pontos âncora · ' + allHandles.length + ' handles · ' + vb.w.toFixed(0) + '×' + vb.h.toFixed(0));
@@ -692,6 +746,9 @@
   }
 
   // ---------- rendering ----------
+  // layout stays entirely in the vector's own coordinate space — zoom
+  // never touches it, so the exported SVG's viewBox is always identical
+  // regardless of how the preview is currently zoomed
   function computeLayout(){
     var scale = parseFloat(markerScale.value);
     var lwScale = parseFloat(lineWidthScale.value);
@@ -720,14 +777,21 @@
     var L = computeLayout();
     var anchorSize = L.anchorSize, handleR = L.handleR, lineW = L.lineW;
 
-    canvas.width = L.totalW * EXPORT_SCALE;
-    canvas.height = L.totalH * EXPORT_SCALE;
-    canvas.style.width = L.totalW + 'px';
-    canvas.style.height = L.totalH + 'px';
+    // the preview's on-screen size is baseFitRatio × zoom; the pixel
+    // buffer is rendered SUPERSAMPLE× denser than that so edges stay
+    // crisp at any zoom level instead of blurring like a CSS-scaled image
+    var zoomFactor = parseFloat(zoomSlider.value) / 100;
+    var displayScale = baseFitRatio * zoomFactor;
+    var pixelScale = displayScale * SUPERSAMPLE;
+
+    canvas.width = L.totalW * pixelScale;
+    canvas.height = L.totalH * pixelScale;
+    canvas.style.width = (L.totalW * displayScale) + 'px';
+    canvas.style.height = (L.totalH * displayScale) + 'px';
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+    ctx.scale(pixelScale, pixelScale);
     ctx.translate(-L.originX, -L.originY);
 
     if (toggleFill.checked){
@@ -769,6 +833,8 @@
   function rerender(){ if (hasFile) render(); }
 
   // ---------- svg export (embeds the overlay) ----------
+  // always built from the vector-unit layout — completely independent of
+  // the preview's current zoom level
   function buildExportSVG(){
     var L = computeLayout();
     var anchorSize = L.anchorSize, handleR = L.handleR, lineW = L.lineW;
@@ -867,6 +933,17 @@
     lineWidthScaleVal.textContent = parseFloat(lineWidthScale.value).toFixed(1) + '×';
     rerender();
   });
+
+  // ---------- zoom ----------
+  function setZoom(value){
+    value = Math.max(25, Math.min(400, value));
+    zoomSlider.value = value;
+    zoomVal.textContent = Math.round(value) + '%';
+    rerender();
+  }
+  zoomSlider.addEventListener('input', function(){ setZoom(parseFloat(zoomSlider.value)); });
+  zoomOutBtn.addEventListener('click', function(){ setZoom(parseFloat(zoomSlider.value) - 25); });
+  zoomInBtn.addEventListener('click', function(){ setZoom(parseFloat(zoomSlider.value) + 25); });
 
 })();
 </script>
